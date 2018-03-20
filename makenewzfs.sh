@@ -5,15 +5,15 @@ pwd=$(pwd)
 wd=$(mktemp -d)
 cd $wd
 
-NEWVERSION=${NEWVERSION:-0.7.1}
+NEWVERSION=${NEWVERSION:-0.7.7}
 
-LINUXPATH=${LINUXPATH:-/usr/src/linux}
+KERN=${KERN:-"$(uname -r)"}
 PKGTYPE=${PKGTYPE:-txz}
 slackver=${slackver:-14.2}
 sbourl=${sbourl:-https://www.slackbuilds.org/slackbuilds}
 out=$pwd/out/$NEWVERSION
 
-export LINUXPATH PKGTYPE
+export KERN PKGTYPE
 mkdir -pv $out
 
 for sbo in spl-solaris zfs-on-linux; do
@@ -29,7 +29,7 @@ for sbo in spl-solaris zfs-on-linux; do
 		sed -i.old.md5 "s/^MD5SUM=.*$/MD5SUM=\"$MD5SUM\"/" $sbo.info
 		tar xf *.gz
 		./$sbo.SlackBuild
-		installpkg /tmp/$sbo-${NEWVERSION}_*_SBo.$PKGTYPE
+		installpkg /tmp/$sbo-${NEWVERSION}_${KERN}-*_SBo.$PKGTYPE
 	)
 	tar tf $sbo.tar.gz|grep -v /$|tar cvvf - -T -|gzip -9 > $out/$sbo.tar.gz
 	ln -f $out/$sbo.tar.gz $out/../$sbo.tar.gz

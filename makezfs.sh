@@ -4,12 +4,12 @@ set -e
 wd=$(mktemp -d)
 cd $wd
 
-LINUXPATH=${LINUXPATH:-/usr/src/linux}
+KERN=${KERN:-"$(uname -r)"}
 PKGTYPE=${PKGTYPE:-txz}
 slackver=${slackver:-14.2}
-sbourl=${sbopkg:-https://www.slackbuilds.org/slackbuilds}
+sbourl=${sbourl:-https://www.slackbuilds.org/slackbuilds}
 
-export LINUXPATH PKGTYPE
+export KERN PKGTYPE
 
 for sbo in spl-solaris zfs-on-linux; do
 	curl -# --insecure $sbourl/$slackver/system/$sbo.tar.gz > $sbo.tar.gz
