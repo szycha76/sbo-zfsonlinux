@@ -14,7 +14,7 @@ wd=$(mktemp -d)
 cd $wd
 
 guessed=$(guessnewversion)
-NEWVERSION=${NEWVERSION:-${guessed:-0.7.7}}
+NEWVERSION=${NEWVERSION:-${guessed:-0.7.9}}
 
 KERN=${KERN:-"$(uname -r)"}
 PKGTYPE=${PKGTYPE:-txz}
@@ -47,6 +47,15 @@ for sbo in spl-solaris zfs-on-linux; do
 	)
 	tar tf $sbo.tar.gz|grep -v /$|tar cvvf - -T -|gzip -9 > $out/$sbo.tar.gz
 	ln -f $out/$sbo.tar.gz $out/../$sbo.tar.gz
+done
+
+for sbo in spl-solaris zfs-on-linux; do
+	curl \
+		-F "userfile=@out/$sbo.tar.gz;filename=$sbo.tar.gz" \
+		-F 'comments=Updated for version $NEWVERSION' \
+		-F submail=szycha@gmail.com \
+		-F MAX_FILE_SIZE=1048576 -F category=System -F submit=Submit \
+			https://www.slackbuilds.org/process_submit/
 done
 
 rm -rf $wd /tmp/SBo
