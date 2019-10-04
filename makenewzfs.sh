@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function guessnewversion() {
-	txt=$(curl --silent http://zfsonlinux.org/ | grep -A4 '#80ff00'|tr /- "\n"|grep '[0-9]\+.*<$'|sed 's/<$//'|uniq)
+	txt=$(curl --silent https://zfsonlinux.org/ | grep -A4 '#80ff00'|tr /- "\n"|grep '[0-9]\+.*<$'|sed 's/<$//'|uniq)
 	c=$(echo "$txt"|wc -l)
 	if [ '1' == "$c" ]; then
 		echo $txt
@@ -20,12 +20,20 @@ KERN=${KERN:-"$(uname -r)"}
 PKGTYPE=${PKGTYPE:-txz}
 slackver=${slackver:-14.2}
 sbourl=${sbourl:-https://www.slackbuilds.org/slackbuilds}
+pending=$(echo $sbourl|sed 's?/slackbuilds?/pending/?')
+sbolist=zfs-on-linux
 out=$pwd/out/$NEWVERSION
+
+failfast=$(curl --silent --insecure $pending|grep zfs-on-linux.tar|cut -d'>' -f4-|cut -d'<' -f1)
+if [[ ! -z "$failfast" ]]; then
+	echo Submission pending since $failfast UTC.  Skipping.
+	exit 0
+fi
 
 export KERN PKGTYPE
 mkdir -pv $out
 
-for sbo in spl-solaris zfs-on-linux; do
+for sbo in $sbolist; do
 	curl -# --insecure $sbourl/$slackver/system/$sbo.tar.gz > $sbo.tar.gz
 	tar xf $sbo.tar.gz
 	(
@@ -49,7 +57,8 @@ for sbo in spl-solaris zfs-on-linux; do
 	ln -f $out/$sbo.tar.gz $out/../$sbo.tar.gz
 done
 
-for sbo in spl-solaris zfs-on-linux; do
+cd $pwd
+for sbo in $sbolist; do
 	curl \
 		-F "userfile=@out/$sbo.tar.gz;filename=$sbo.tar.gz" \
 		-F 'comments=Updated for version $NEWVERSION' \
