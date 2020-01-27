@@ -40,6 +40,7 @@ for sbo in $sbolist; do
 		cd $sbo
 		VERSION=$(grep ^VERSION= $sbo.info|cut -d'"' -f2|sed 's:\.:\\.:g')
 		sed -i.old s/$VERSION/$NEWVERSION/g $sbo.info $sbo.SlackBuild
+		sed -i.older "s/\(export KERN=\)\([45]\(\.[0-9]\{1,2\}\)\{1,2\}\)/\1$(uname -r)/" README
 		sums=$(md5sum $sbo.info $sbo.info.old|cut -d ' ' -f1|uniq|wc -l)
 		if [ "1" == "$sums" ]; then
 			echo Nothing has changed yet, leave it.
@@ -50,12 +51,17 @@ for sbo in $sbolist; do
 		MD5SUM=$(md5sum *.gz |cut -d' ' -f1)
 		sed -i.old.md5 "s/^MD5SUM=.*$/MD5SUM=\"$MD5SUM\"/" $sbo.info
 		tar xf *.gz
+		# Build faster, stay low:
+		sed -e 's/^env -u ARCH make$/env -u ARCH make -j 19 || env -u ARCH make/' ./$sbo.SlackBuild -i
 		./$sbo.SlackBuild
+		sed -e 's/^env -u ARCH make -j 19 || env -u ARCH make$/env -u ARCH make/' ./$sbo.SlackBuild -i
 		installpkg /tmp/$sbo-${NEWVERSION}_${KERN}-*_SBo.$PKGTYPE
 	)
 	tar tf $sbo.tar.gz|grep -v /$|tar cvvf - -T -|gzip -9 > $out/$sbo.tar.gz
 	ln -f $out/$sbo.tar.gz $out/../$sbo.tar.gz
 done
+
+exit 14
 
 cd $pwd
 for sbo in $sbolist; do
