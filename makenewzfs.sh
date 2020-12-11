@@ -8,6 +8,10 @@ function guessnewversion() {
 	fi
 }
 
+function guesslatestkernel() {
+	curl https://www.kernel.org/ --silent|grep -A2 latest_link|tr '<>' '\n'|grep -B1 ^/a$|head -1
+}
+
 set -e
 pwd=$(pwd)
 wd=$(mktemp -d)
@@ -39,8 +43,8 @@ for sbo in $sbolist; do
 	(
 		cd $sbo
 		VERSION=$(grep ^VERSION= $sbo.info|cut -d'"' -f2|sed 's:\.:\\.:g')
-		sed -i.old s/$VERSION/$NEWVERSION/g $sbo.info $sbo.SlackBuild
-		sed -i.older "s/\(export KERN=\)\([45]\(\.[0-9]\{1,2\}\)\{1,2\}\)/\1$(uname -r)/" README
+		sed -i.old "s/$VERSION/$NEWVERSION/g; s/2017 Marcin/2017-2020 Marcin/; s/2017-2020 Marcin/2017-$(date +%Y) Marcin/" $sbo.info $sbo.SlackBuild
+		sed -i.older "s/\(export KERN=\)\([45]\(\.[0-9]\{1,2\}\)\{1,2\}\)/\1$(guesslatestkernel)/" README
 		sums=$(md5sum $sbo.info $sbo.info.old|cut -d ' ' -f1|uniq|wc -l)
 		if [ "1" == "$sums" ]; then
 			echo Nothing has changed yet, leave it.
@@ -55,13 +59,13 @@ for sbo in $sbolist; do
 		sed -e 's/^env -u ARCH make$/env -u ARCH make -j 19 || env -u ARCH make/' ./$sbo.SlackBuild -i
 		./$sbo.SlackBuild
 		sed -e 's/^env -u ARCH make -j 19 || env -u ARCH make$/env -u ARCH make/' ./$sbo.SlackBuild -i
-		installpkg /tmp/$sbo-${NEWVERSION}_${KERN}-*_SBo.$PKGTYPE
+		#installpkg /tmp/$sbo-${NEWVERSION}_${KERN}-*_SBo.$PKGTYPE
 	)
 	tar tf $sbo.tar.gz|grep -v /$|tar cvvf - -T -|gzip -9 > $out/$sbo.tar.gz
 	ln -f $out/$sbo.tar.gz $out/../$sbo.tar.gz
 done
 
-exit 14
+#exit 14
 
 cd $pwd
 for sbo in $sbolist; do
